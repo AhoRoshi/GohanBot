@@ -3,6 +3,7 @@ import random
 import discord
 import json
 from discord.ext import tasks
+from datetime import time, timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,9 +13,9 @@ intents = discord.Intents.all()
 bot = discord.Client(intents=intents)
 
 
-def toggle_channel(channel_id):
+def is_channel_registered(channel_id):
     channel_path = os.path.join(
-        os.path.dirname(__file__), "..", "config", "channel_list.json"
+        os.path.dirname(__file__), "..", "config", "channels.json"
     )
     if not os.path.exists(channel_path):
         data = []
@@ -34,9 +35,9 @@ def toggle_channel(channel_id):
         return False
 
 
-def get_channel_list():
+def load_channels():
     channel_path = os.path.join(
-        os.path.dirname(__file__), "..", "config", "channel_list.json"
+        os.path.dirname(__file__), "..", "config", "channels.json"
     )
     if not os.path.exists(channel_path):
         return []
@@ -46,32 +47,42 @@ def get_channel_list():
         return data["channels"]
 
 
-def load_adjectives(file_path):
-    try:
-        with open(file_path, "r", encoding="utf-8") as file:
-            adjectives = [line.strip() for line in file]
-        return adjectives
-    except FileNotFoundError:
-        print(f"Error: File not found at {file_path}")
-        return []
-
-
-async def send_random_message():
-    await bot.wait_until_ready()
-    channel_list = get_channel_list()
+def load_adjectives():
     adjective_path = os.path.join(
         os.path.dirname(__file__), "..", "resources", "adjective.txt"
     )
-    adjectives = load_adjectives(adjective_path)
-    for channel_id in channel_list:
+    try:
+        with open(adjective_path, "r", encoding="utf-8") as file:
+            adjectives = [line.strip() for line in file]
+        return adjectives
+    except FileNotFoundError:
+        print(f"Error: File not found at {adjective_path}")
+        return []
+
+
+JST = timezone(timedelta(hours=+9), "JST")
+times = [time(hour=0, minute=0, tzinfo=JST)]
+
+
+@tasks.loop(time=times)
+async def send_random_message():
+    await bot.wait_until_ready()
+    channels = load_channels()
+    adjectives = load_adjectives()
+    for channel_id in channels:
         adjective = random.choice(adjectives)
-        channel = bot.get_channel(channel_id)
-        channel.send(f"{adjective}ごはん")
+        try:
+            channel = bot.get_channel(channel_id)
+            await channel.send(f"{adjective}ごはん")
+        except:
+            is_channel_registered(channel_id)  # チャンネルが存在しない場合は登録解除
 
 
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.CustomActivity(name="tasty gohan!"))
+    if not send_random_message.is_running():
+        send_random_message.start()
 
 
 @bot.event
@@ -81,11 +92,10 @@ async def on_message(message):
     # メンションがある際にチャンネル登録の有無を切り替える
     if bot.user.mention in message.content:
         channel_id = message.channel.id
-        if toggle_channel(channel_id):
+        if is_channel_registered(channel_id):
             await message.channel.send("not tasty gohan...")
         else:
             await message.channel.send("tasty gohan!")
 
 
-send_random_message.start()
 bot.run(discord_token)
