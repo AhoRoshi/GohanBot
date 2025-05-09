@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 discord_token = os.getenv("token")
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 bot = discord.Client(intents=intents)
 
 
@@ -48,15 +48,15 @@ def load_channels():
 
 
 def load_adjectives():
-    adjective_path = os.path.join(
+    adjectives_path = os.path.join(
         os.path.dirname(__file__), "..", "resources", "adjective.txt"
     )
     try:
-        with open(adjective_path, "r", encoding="utf-8") as file:
+        with open(adjectives_path, "r", encoding="utf-8") as file:
             adjectives = [line.strip() for line in file]
         return adjectives
     except FileNotFoundError:
-        print(f"Error: File not found at {adjective_path}")
+        print(f"Error: File not found at {adjectives_path}")
         return []
 
 
