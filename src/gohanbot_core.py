@@ -49,7 +49,7 @@ def load_channels():
 
 def load_adjectives():
     adjectives_path = os.path.join(
-        os.path.dirname(__file__), "..", "resources", "adjective.txt"
+        os.path.dirname(__file__), "..", "resources", "adjectives.txt"
     )
     try:
         with open(adjectives_path, "r", encoding="utf-8") as file:
@@ -75,12 +75,12 @@ async def send_random_message():
             channel = bot.get_channel(channel_id)
             await channel.send(f"{adjective}ごはん")
         except:
-            is_channel_registered(channel_id)  # チャンネルが存在しない場合は登録解除
+            is_channel_registered(channel_id)  # チャンネルが消えてる場合は登録解除
 
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.CustomActivity(name="tasty gohan!"))
+    await bot.change_presence(activity=discord.CustomActivity(name="神"))
     if not send_random_message.is_running():
         send_random_message.start()
 
@@ -93,9 +93,9 @@ async def on_message(message):
     if bot.user.mention in message.content:
         channel_id = message.channel.id
         if is_channel_registered(channel_id):
-            await message.channel.send("not tasty gohan...")
+            await message.channel.send("うどん")
         else:
-            await message.channel.send("tasty gohan!")
+            await message.channel.send("ごはん")
 
 
 bot.run(discord_token)
