@@ -89,8 +89,8 @@ async def on_ready():
 async def on_message(message):
     if message.author == bot.user:
         return
-    # メンションがある際にチャンネル登録の有無を切り替える
-    if bot.user.mention in message.content:
+    # 管理者からメンションがある際にチャンネル登録の有無を切り替える
+    if bot.user.mention in message.content and message.author.guild_permissions.administrator:
         channel_id = message.channel.id
         if is_channel_registered(channel_id):
             await message.channel.send("うどん")
